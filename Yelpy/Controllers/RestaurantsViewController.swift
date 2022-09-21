@@ -9,97 +9,98 @@
 import UIKit
 import AlamofireImage
 
-class RestaurantsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
-    // ––––– TODO: Add storyboard Items (i.e. tableView + Cell + configurations for Cell + cell outlets)
-    // ––––– TODO: Next, place TableView outlet here
+class RestaurantsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchResultsUpdating {
     @IBOutlet weak var tableView: UITableView!
     
-    // –––––– TODO: Initialize restaurantsArray
-    var restaurants: [[String:Any?]] = []
+    // ––––– TODO: Build Restaurant Class Done
     
+    // –––––– TODO: Update restaurants Array to an array of Restaurants Done
+    var restaurantsArray: [Restaurant] = []
     
-    // ––––– TODO: Add tableView datasource + delegate
+    // Bonus
+    
+    var searchController: UISearchController!
+    
+    var filteredPlaces: [Restaurant]!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.filteredPlaces = []
+        
         tableView.delegate = self
         tableView.dataSource = self
         
+        // Initializing with searchResultsController set to nil means that
+        // searchController will use this view controller to display the search results
+        searchController = UISearchController(searchResultsController: nil)
+        searchController.searchResultsUpdater = self
+        
+        // If we are using this same view controller to present the results
+        // dimming it out wouldn't make sense. Should probably only set
+        // this to yes if using another controller to display the search results.
+        searchController.searchBar.sizeToFit()
+        tableView.tableHeaderView = searchController.searchBar
+        
+        // Sets this view controller as presenting view controller for the search interface
+        definesPresentationContext = true
+        
         getAPIData()
+        
+        tableView.reloadData()
     }
     
     
-    // ––––– TODO: Get data from API helper and retrieve restaurants
+    // ––––– TODO: Update API to get an array of restaurant objects Done
     func getAPIData() {
-        API.getRestaurants { restaurants in
-            guard let restaurants = restaurants else { return }
-            print(restaurants)
-            self.restaurants = restaurants
+        API.getRestaurants() { (restaurants) in
+            guard let restaurants = restaurants else {
+                return
+            }
+            self.restaurantsArray = restaurants
+            self.filteredPlaces = restaurants
+            
             self.tableView.reloadData()
         }
     }
     
-}
-
-// ––––– TODO: Create tableView Extension and TableView Functionality
-
-extension RestaurantsViewController {
+    // Protocol Stubs
+    // How many cells there will be
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return restaurants.count
+        return filteredPlaces.count
     }
     
+    
+    // ––––– TODO: Configure cell using MVC
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: Constants.cellIdentifier, for: indexPath) as! RestaurantCell
+        // Create Restaurant Cell
+        let cell = tableView.dequeueReusableCell(withIdentifier: "RestaurantCell") as! RestaurantCell
         
-        let restaurant = restaurants[indexPath.row]
+        let restaurant = filteredPlaces[indexPath.row]
         
-        cell.restaurantTitleLabel.text = restaurant["name"] as? String ?? ""
-        let restaurantCategories = restaurant["categories"] as? [[String: Any]]
-        let category = restaurantCategories![0]
-        cell.categoryLabel.text = category["title"] as? String
-        cell.costLabel.text = restaurant["price"] as? String ?? "Price Info Unavailable"
-        
-        let rating = restaurant["rating"] as? Double ?? 0.0
-        cell.ratingsImageView.image = getStars(from: rating)
-        cell.ratingsLabel.text = String(restaurant["review_count"] as? Int ?? 0)
-        
-        cell.phoneNumberLabel.text = restaurant["display_phone"] as? String
-        
-        if let imageURLString = restaurant["image_url"] as? String {
-            let imageURL = URL(string: imageURLString)
-            cell.restaurantImage.af.setImage(withURL: imageURL!)
-        }
+        cell.r = restaurant
         
         return cell
     }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
+    func updateSearchResults(for searchController: UISearchController) {
+        if let searchText = searchController.searchBar.text {
+            filteredPlaces = searchText.isEmpty ? restaurantsArray
+            :
+            restaurantsArray.filter { $0.name.localizedCaseInsensitiveContains(searchText)
+            }
+            tableView.reloadData()
+        }
     }
     
-    func getStars(from rating: Double) -> UIImage {
-        switch rating {
-        case 0.0:
-            return UIImage(named: "regular_0")!
-        case 1.0:
-            return UIImage(named: "regular_1")!
-        case 1.5:
-            return UIImage(named: "regular_1_half")!
-        case 2.0:
-            return UIImage(named: "regular_2")!
-        case 2.5:
-            return UIImage(named: "regular_2_half")!
-        case 3.0:
-            return UIImage(named: "regular_3")!
-        case 3.5:
-            return UIImage(named: "regular_3_half")!
-        case 4.0:
-            return UIImage(named: "regular_4")!
-        case 4.5:
-            return UIImage(named: "regular_4_half")!
-        case 5.0:
-            return UIImage(named: "regular_5")!
-        default:
-            return UIImage(named: "regular_0")!
+    // –––––– TODO: Override segue to pass the restaurant object to the DetailsViewController
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        let cell = sender as! UITableViewCell
+        
+        if let indexpath = tableView.indexPath(for: cell) {
+            let r = restaurantsArray[indexpath.row]
+            let detailViewController = segue.destination as! RestaurantDetailViewController
+            detailViewController.r = r
         }
     }
 }

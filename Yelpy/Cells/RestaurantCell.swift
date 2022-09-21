@@ -2,21 +2,36 @@
 //  RestaurantCell.swift
 //  Yelpy
 //
-//  Created by Luis Rivera Rivera on 9/9/22.
-//  Copyright © 2022 memo. All rights reserved.
+//  Created by Memo on 5/28/20.
+//  Copyright © 2020 memo. All rights reserved.
 //
 
 import UIKit
+import AlamofireImage
 
 class RestaurantCell: UITableViewCell {
 
-    @IBOutlet weak var restaurantTitleLabel: UILabel!
-    @IBOutlet weak var restaurantImage: UIImageView!
+    
+    @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var categoryLabel: UILabel!
-    @IBOutlet weak var costLabel: UILabel!
-    @IBOutlet weak var ratingsImageView: UIImageView!
-    @IBOutlet weak var ratingsLabel: UILabel!
-    @IBOutlet weak var phoneNumberLabel: UILabel!
+    @IBOutlet weak var starsImage: UIImageView!
+    @IBOutlet weak var reviewsLabel: UILabel!
+    @IBOutlet weak var phoneLabel: UILabel!
+    @IBOutlet weak var restaurantImage: UIImageView!
+    
+    var r: Restaurant! {
+        didSet {
+            nameLabel.text = r.name
+            categoryLabel.text = r.mainCategory
+            phoneLabel.text = r.phone
+            reviewsLabel.text = String(r.reviews) + " reviews"
+            
+            // set images
+            starsImage.image = Stars.dict[r.rating]!
+            restaurantImage.af.setImage(withURL: r.imageURL!)
+            restaurantImage.layer.cornerRadius = 10
+            restaurantImage.clipsToBounds = true        }
+    }
     
     override func awakeFromNib() {
         super.awakeFromNib()
