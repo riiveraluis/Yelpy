@@ -11,10 +11,11 @@ import Foundation
 
 struct API {
     
+
     static func getRestaurants(completion: @escaping ([Restaurant]?) -> Void) {
         
         // ––––– TODO: Add your own API key!
-        let apikey = "a-AbXK16dKb9mGk10SlhVGeiQXGHkHU4hDfmjY0L1OiJYFoRX0RfmE6zQpoZY1REc6hLzt1g140HpvvU_suggFe6Ade9JF2NbhdHQNdI4RxM0dvEnc243qO38PwbY3Yx"
+        let apikey = "gjSp5LrrEi9tJFLQALnw-RdZSRy-TLiJsfPM09LzFMNpMnmSHQZ2n2R_f3ptONYEalxMIudE9avxn_bQvvDZJc1zpPdfPDOvdh08RlT8vZGbqFx3dbtkuliMwATHXnYx"
         
         // Coordinates for San Francisco
         let lat = 37.773972
@@ -25,7 +26,6 @@ struct API {
         
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
         
-        // Insert API Key to request
         request.setValue("Bearer \(apikey)", forHTTPHeaderField: "Authorization")
         
         let session = URLSession(configuration: .default, delegate: nil, delegateQueue: OperationQueue.main)
@@ -35,28 +35,21 @@ struct API {
                 print(error.localizedDescription)
             } else if let data = data {
                 
-        
-
                 // ––––– TODO: Get data from API and return it using completion
-                
-                // 1. Convert json response to a dictionary
                 let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as! [String: Any]
-                // 2. Grab the businesses data and convert it to an array of dictionaries
-                //    for each restaurant
-                let restDictionaries = dataDictionary["businesses"] as! [[String: Any]]
                 
-                // Variable to store array of Restaurants
-                var restaurants: [Restaurant] = []
+                let restDict = dataDictionary["businesses"] as! [[String: Any]]
                 
-                // For each restaurant dictionary to initialize an array of Restaurant Object
+                let restaurants = restDict.map({ Restaurant.init(dict: $0) })
                 
-                for dictionary in restDictionaries {
-                    let restaurant = Restaurant(dict: dictionary)
-                    restaurants.append(restaurant)
-                }
-                
-                // 3. completion is an escaping method  which allows the data to be used
-                //    outside of the closure
+                // Using For Loop
+//                var restaurants: [Restaurant] = []
+//                for dictionary in dataDictionary {
+//                    let restaurant = Restaurant.init(dict: dictionary as! [String : Any])
+//                    restaurants.append(restaurant)
+//                }
+
+                                
                 return completion(restaurants)
                 
                 }
@@ -65,6 +58,10 @@ struct API {
             task.resume()
         
         }
-    }
+    
+    
+
+    
+}
 
     

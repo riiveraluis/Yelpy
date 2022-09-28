@@ -8,99 +8,148 @@
 
 import UIKit
 import AlamofireImage
+import Lottie
+import SkeletonView
 
-class RestaurantsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchResultsUpdating {
+class RestaurantsViewController: UIViewController {
+    
+    // Outlets
     @IBOutlet weak var tableView: UITableView!
-    
-    // ––––– TODO: Build Restaurant Class Done
-    
-    // –––––– TODO: Update restaurants Array to an array of Restaurants Done
+    @IBOutlet weak var searchBar: UISearchBar!
+    // Initializers
     var restaurantsArray: [Restaurant] = []
+    var filteredRestaurants: [Restaurant] = []
     
-    // Bonus
+    // –––––  Lab 4: create an animation view
+    var animationView: AnimationView?
+    var refresh = true
     
-    var searchController: UISearchController!
-    
-    var filteredPlaces: [Restaurant]!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        self.filteredPlaces = []
-        
+        // ––––– Lab 4 TODO: Start animations
+        startAnimation()
+        // Table View
         tableView.delegate = self
         tableView.dataSource = self
         
-        // Initializing with searchResultsController set to nil means that
-        // searchController will use this view controller to display the search results
-        searchController = UISearchController(searchResultsController: nil)
-        searchController.searchResultsUpdater = self
+        // Search Bar delegate
+        searchBar.delegate = self
         
-        // If we are using this same view controller to present the results
-        // dimming it out wouldn't make sense. Should probably only set
-        // this to yes if using another controller to display the search results.
-        searchController.searchBar.sizeToFit()
-        tableView.tableHeaderView = searchController.searchBar
-        
-        // Sets this view controller as presenting view controller for the search interface
-        definesPresentationContext = true
-        
+        // Get Data from API
         getAPIData()
         
-        tableView.reloadData()
+        // –––––  Lab 4: stop animations, you can add a timer to stop the animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: self.stopAnimation)
     }
     
     
-    // ––––– TODO: Update API to get an array of restaurant objects Done
-    func getAPIData() {
+    @objc func getAPIData() {
         API.getRestaurants() { (restaurants) in
             guard let restaurants = restaurants else {
                 return
             }
             self.restaurantsArray = restaurants
-            self.filteredPlaces = restaurants
-            
+            self.filteredRestaurants = restaurants
             self.tableView.reloadData()
         }
     }
+}
+
+// ––––– TableView Functionality –––––
+extension RestaurantsViewController: SkeletonTableViewDataSource {
     
-    // Protocol Stubs
-    // How many cells there will be
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return filteredPlaces.count
+    func collectionSkeletonView(_ skeletonView: UITableView, cellIdentifierForRowAt indexPath: IndexPath) -> ReusableCellIdentifier {
+        return "RestauranCell"
     }
     
+    func startAnimation() {
+        animationView = .init(name: "4762-food-carousel")
+        animationView?.frame = CGRect(x: view.frame.width / 3, y: 0, width: 100, height: 100)
+        animationView?.contentMode = .scaleAspectFit
+        view.addSubview(animationView!)
+        animationView?.loopMode = .loop
+        animationView?.animationSpeed = 1
+        animationView?.play()
+        view.showGradientSkeleton()
+    }
     
-    // ––––– TODO: Configure cell using MVC
+    @objc func stopAnimation() {
+//        animationView?.stop()
+        view.hideSkeleton()
+//        view.subviews.last?.removeFromSuperview()
+        view.hideSkeleton()
+        refresh = false
+    }
+}
+
+extension RestaurantsViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        filteredRestaurants.count
+    }
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        // Create Restaurant Cell
         let cell = tableView.dequeueReusableCell(withIdentifier: "RestaurantCell") as! RestaurantCell
         
-        let restaurant = filteredPlaces[indexPath.row]
+        cell.r = filteredRestaurants[indexPath.row]
         
-        cell.r = restaurant
+        if self.refresh {
+            cell.showAnimatedSkeleton()
+        } else {
+            cell.hideSkeleton()
+        }
         
         return cell
     }
     
-    func updateSearchResults(for searchController: UISearchController) {
-        if let searchText = searchController.searchBar.text {
-            filteredPlaces = searchText.isEmpty ? restaurantsArray
-            :
-            restaurantsArray.filter { $0.name.localizedCaseInsensitiveContains(searchText)
-            }
-            tableView.reloadData()
-        }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    // –––––– TODO: Override segue to pass the restaurant object to the DetailsViewController
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         let cell = sender as! UITableViewCell
-        
-        if let indexpath = tableView.indexPath(for: cell) {
-            let r = restaurantsArray[indexpath.row]
+        if let indexPath = tableView.indexPath(for: cell) {
+            let r = filteredRestaurants[indexPath.row]
             let detailViewController = segue.destination as! RestaurantDetailViewController
             detailViewController.r = r
         }
     }
 }
+
+extension RestaurantsViewController: UISearchBarDelegate {
+    
+    // Search bar functionality
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText != "" {
+            filteredRestaurants = restaurantsArray.filter { (r: Restaurant) -> Bool in
+                return r.name.lowercased().contains(searchText.lowercased())
+            }
+        }
+        else {
+            filteredRestaurants = restaurantsArray
+        }
+        tableView.reloadData()
+    }
+    
+    
+    // Show Cancel button when typing
+    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+        self.searchBar.showsCancelButton = true
+    }
+    
+    // Logic for searchBar cancel button
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.showsCancelButton = false // remove cancel button
+        searchBar.text = "" // reset search text
+        searchBar.resignFirstResponder() // remove keyboard
+        filteredRestaurants = restaurantsArray // reset results to display
+        tableView.reloadData()
+    }
+    
+}
+
+
+
+
+

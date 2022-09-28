@@ -14,17 +14,12 @@ struct Stars {
     
     static let dict = [
         0: Stars.zero,
-        1: Stars.one,
-        1.5: Stars.oneHalf,
-        2: Stars.two,
-        2.5: Stars.twoHalf,
-        3: Stars.three,
-        3.5: Stars.threeHalf,
-        4: Stars.four,
-        4.5: Stars.fourHalf,
+        1: Stars.one, 1.5: Stars.oneHalf,
+        2: Stars.two, 2.5: Stars.twoHalf,
+        3: Stars.three, 3.5: Stars.threeHalf,
+        4: Stars.four, 4.5: Stars.fourHalf,
         5: Stars.five
     ]
-    
     
     static let zero = UIImage(named: "regular_0")
     static let one = UIImage(named: "regular_1")
